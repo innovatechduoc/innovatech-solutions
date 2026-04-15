@@ -1,5 +1,6 @@
 // src/app/page.tsx
 import React from 'react';
+import Link from 'next/link';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -9,7 +10,8 @@ import {
   Bell,
   TrendingUp,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  ChevronRight
 } from 'lucide-react';
 
 export default function InnovatechDashboard() {
@@ -61,10 +63,10 @@ export default function InnovatechDashboard() {
             <LayoutDashboard size={20} /> 
             <span className="font-medium">Dashboard Central</span>
           </a>
-          <a href="#" className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition">
+          <Link href="/proyectos" className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition">
             <FolderKanban size={20} /> 
             <span className="font-medium">Gestión de Proyectos</span>
-          </a>
+          </Link>
           <a href="#" className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition">
             <UsersRound size={20} /> 
             <span className="font-medium">Recursos y Capacidad</span>
@@ -131,7 +133,10 @@ export default function InnovatechDashboard() {
                     <FolderKanban size={18} className="text-blue-500"/>
                     Estado de Proyectos
                   </h3>
-                  <button className="text-sm text-blue-600 font-medium hover:underline">Ver Tablero Completo</button>
+                  <Link href="/proyectos" className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1">
+                    Ver Tablero Completo
+                    <ChevronRight size={16} />
+                  </Link>
                 </div>
                 <div className="p-5 flex-1">
                   <div className="space-y-4">
