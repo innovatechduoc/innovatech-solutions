@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Empleado from "@/models/Empleado";
+import Notificacion from "@/models/Notificacion";
 
 // GET: Sirve para obtener la lista de todos los empleados
 export async function GET() {
@@ -27,6 +28,17 @@ export async function POST(request: Request) {
 
     // Le decimos a Mongoose que cree el registro usando nuestro Molde
     const nuevoEmpleado = await Empleado.create(body);
+
+    await Notificacion.create({
+      type: "employee",
+      title: "Nuevo usuario agregado",
+      message: `Se registró a ${body.nombre || "un nuevo empleado"} en el sistema.`,
+      metadata: {
+        nombre: body.nombre || null,
+        especialidad: body.especialidad || null,
+        email: body.email || null,
+      },
+    });
 
     return NextResponse.json(nuevoEmpleado, { status: 201 });
   } catch (error) {

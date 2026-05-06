@@ -6,6 +6,7 @@ const UsuarioSchema = new mongoose.Schema(
     password: { type: String, required: true }, // Recuerda encriptarla con bcrypt
     rol: { type: String, enum: ["Admin", "Manager", "User"], default: "User" },
     empleadoId: { type: mongoose.Schema.Types.ObjectId, ref: "Empleado" }, // Vinculación con el recurso humano
+    profilePhoto: { type: String, default: null }, // Base64 image stored in cloud (MongoDB)
   },
   { timestamps: true },
 );

@@ -1,43 +1,80 @@
 "use client"; // Obligatorio para usar Hooks en Next.js App Router
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  FolderKanban,
-  UsersRound,
-  BarChart3,
-  Search,
-  Bell,
-  TrendingUp,
   Clock,
-  ShieldCheck,
   ChevronRight,
+  FolderKanban,
+  Search,
+  TrendingUp,
+  UsersRound,
 } from "lucide-react";
+import Header from "../../components/Header";
+import Sidebar from "../../components/Sidebar";
 
 export default function InnovatechDashboard() {
-  // 1. Estados para almacenar los datos reales de Mongo
-  const [activeProjects, setActiveProjects] = useState([]);
-  const [resourceCapacity, setResourceCapacity] = useState([]);
+  const router = useRouter();
+  const [activeProjects, setActiveProjects] = useState<any[]>([]);
+  const [resourceCapacity, setResourceCapacity] = useState<any[]>([]);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 2. Fetch a tus API Routes (BFF)
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("rol");
+    localStorage.removeItem("email");
+    router.push("/login");
+  };
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  useEffect(() => {
+    const email = localStorage.getItem("email");
+    if (!email) return;
+
+    async function fetchProfilePhoto(userEmail: string) {
+      try {
+        const res = await fetch(
+          `/api/profile?email=${encodeURIComponent(userEmail)}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setProfilePhoto(data.profilePhoto || null);
+        }
+      } catch (err) {
+        console.error("Error fetching profile photo:", err);
+      }
+    }
+
+    fetchProfilePhoto(email);
+  }, []);
+
   useEffect(() => {
     async function cargarDatos() {
       try {
-        // Llamamos al Project Service y Resource Service
+        const PROJECT_API_URL =
+          process.env.NEXT_PUBLIC_PROJECT_SERVICE_URL ||
+          "http://localhost:4000/api/projects";
+
         const [resProyectos, resRecursos] = await Promise.all([
-          fetch("/api/proyectos"),
-          fetch("/api/recursos"),
+          fetch(PROJECT_API_URL, { cache: "no-store" }),
+          fetch("/api/recursos").catch(() => null),
         ]);
 
-        const dataProyectos = await resProyectos.json();
-        const dataRecursos = await resRecursos.json();
+        const dataProyectos = resProyectos.ok ? await resProyectos.json() : [];
+        const dataRecursos =
+          resRecursos && resRecursos.ok ? await resRecursos.json() : [];
 
-        setActiveProjects(dataProyectos);
-        setResourceCapacity(dataRecursos);
+        setActiveProjects(Array.isArray(dataProyectos) ? dataProyectos : []);
+        setResourceCapacity(Array.isArray(dataRecursos) ? dataRecursos : []);
       } catch (error) {
-        console.error("Error al conectar con la base de datos:", error);
+        console.error(
+          "Error al conectar con la base de datos o el Gateway:",
+          error,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -46,7 +83,6 @@ export default function InnovatechDashboard() {
     cargarDatos();
   }, []);
 
-  // 3. KPIs Dinámicos calculados en base a la BD
   const kpis = [
     {
       label: "Índice de Desempeño",
@@ -81,90 +117,42 @@ export default function InnovatechDashboard() {
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-500">
-        Cargando módulos de Innovatech...
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-medium">Cargando módulos de Innovatech...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      {/* Sidebar (Sin cambios) */}
-      <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col border-r border-slate-800">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-white">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
-              I
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">Innovatech</h1>
-          </div>
-          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-            <ShieldCheck size={12} className="text-green-400" /> JWT Auth Active
-          </p>
-        </div>
+      <Sidebar
+        activeModule="dashboard"
+        isMobileMenuOpen={isMobileMenuOpen}
+        onCloseMobileMenu={closeMobileMenu}
+      />
 
-        <div className="px-4 py-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          Módulos Principales
-        </div>
-
-        <nav className="flex-1 px-3 space-y-1">
-          <a
-            href="#"
-            className="flex items-center gap-3 p-3 bg-blue-600/10 text-blue-400 rounded-lg transition"
-          >
-            <LayoutDashboard size={20} />
-            <span className="font-medium">Dashboard Central</span>
-          </a>
-          <Link
-            href="/proyectos"
-            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition"
-          >
-            <FolderKanban size={20} />
-            <span className="font-medium">Gestión de Proyectos</span>
-          </Link>
-          <a
-            href="#"
-            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition"
-          >
-            <UsersRound size={20} />
-            <span className="font-medium">Recursos y Capacidad</span>
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 p-3 hover:bg-slate-800 hover:text-white rounded-lg transition"
-          >
-            <BarChart3 size={20} />
-            <span className="font-medium">Analítica y KPIs</span>
-          </a>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Header (Sin cambios) */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shrink-0">
-          <div className="relative w-96">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Buscar proyectos, recursos o clientes..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="text-slate-400 hover:text-slate-600 relative">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="h-8 w-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold text-sm">
-              DR
-            </div>
-          </div>
-        </header>
+        <Header
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          profilePhoto={profilePhoto}
+          onLogout={handleLogout}
+          searchContent={
+            <>
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Buscar proyectos, recursos o clientes..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition outline-none"
+              />
+            </>
+          }
+        />
 
-        {/* Dashboard Content */}
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto space-y-8">
             <div>
@@ -177,7 +165,6 @@ export default function InnovatechDashboard() {
               </p>
             </div>
 
-            {/* Modulo 3: Analítica */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {kpis.map((kpi, i) => (
                 <div
@@ -200,7 +187,6 @@ export default function InnovatechDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Modulo 1: Gestión de Proyectos */}
               <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
                 <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -232,7 +218,6 @@ export default function InnovatechDashboard() {
                               <span className="text-xs font-mono text-slate-400">
                                 ID: {project._id.slice(-5).toUpperCase()}
                               </span>
-                              {/* Asegúrate de que las propiedades coincidan con tu modelo Mongoose (ej: project.nombre) */}
                               <h4 className="font-semibold text-slate-800">
                                 {project.nombre || project.name}
                               </h4>
@@ -244,7 +229,8 @@ export default function InnovatechDashboard() {
                             </div>
                             <span
                               className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                                project.estado === "Completado"
+                                project.estado === "Completado" ||
+                                project.estado === "Finalizado"
                                   ? "bg-green-100 text-green-700"
                                   : project.estado === "En Progreso"
                                     ? "bg-blue-100 text-blue-700"
@@ -261,7 +247,6 @@ export default function InnovatechDashboard() {
                 </div>
               </div>
 
-              {/* Modulo 2: Gestión de Recursos */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
                 <div className="p-5 border-b border-slate-100">
                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -276,7 +261,7 @@ export default function InnovatechDashboard() {
                   <div className="space-y-4">
                     {resourceCapacity.length === 0 ? (
                       <p className="text-sm text-slate-500 text-center py-4">
-                        No hay recursos en la base de datos.
+                        No hay recursos en la base de datos local.
                       </p>
                     ) : (
                       resourceCapacity.map((resource: any) => (
