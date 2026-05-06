@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Mail,
   Lock,
@@ -265,6 +266,14 @@ export default function LoginPage() {
                     </>
                   )}
                 </button>
+
+                <Link
+                  href="/register"
+                  className="w-full inline-flex items-center justify-center gap-2 border border-slate-600 text-slate-200 hover:text-white hover:border-slate-500 hover:bg-slate-800/60 font-semibold py-3 rounded-xl transition-all duration-300"
+                >
+                  Crear cuenta
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
               </form>
 
               {/* Footer */}
