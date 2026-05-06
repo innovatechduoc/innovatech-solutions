@@ -1,36 +1,47 @@
+// app/api/auth/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Usuario from "@/models/Usuario";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
     await connectDB();
     const { email, password } = await req.json();
 
-    // Buscamos al usuario y verificamos su existencia
+    // 1. Verificamos que el usuario exista en la base de datos
     const usuario = await Usuario.findOne({ email });
 
-    if (!usuario || usuario.password !== password) {
+    if (!usuario) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
-        { status: 401 },
+        { error: "Correo o contraseña incorrectos" },
+        { status: 400 }, // Error genérico por seguridad
       );
     }
 
-    // En producción, aquí generarías un JWT real
-    const token = "simulated-jwt-token-for-" + usuario.rol;
+    // 2. Comparamos la contraseña escrita con la encriptada en la BD
+    const contrasenaValida = await bcrypt.compare(password, usuario.password);
 
+    if (!contrasenaValida) {
+      return NextResponse.json(
+        { error: "Correo o contraseña incorrectos" },
+        { status: 400 }, // Error genérico por seguridad
+      );
+    }
+
+    // 3. Si todo es correcto, le damos paso (Retornamos éxito)
     return NextResponse.json(
       {
-        message: "Login exitoso",
-        token,
+        mensaje: "Autenticación exitosa",
+        token: "token-generico-temporal", // Tu frontend espera un token para el localStorage
         rol: usuario.rol,
       },
-      { status: 200 },
+      { status: 200 }, // 200 OK
     );
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error al iniciar sesión:", error);
     return NextResponse.json(
-      { error: "Error en el servidor" },
+      { error: "Error interno del servidor" },
       { status: 500 },
     );
   }
