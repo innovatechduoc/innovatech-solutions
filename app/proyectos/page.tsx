@@ -15,13 +15,10 @@ import {
   TrendingUp,
   Trash2,
   X,
-  Edit,
-  Users,
 } from "lucide-react";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
 
-// 1. Ampliamos la interfaz del proyecto para incluir el equipo
 interface Project {
   _id?: string;
   nombre: string;
@@ -29,41 +26,24 @@ interface Project {
   estado: string;
   progress?: number;
   fechaInicio: string;
-  equipo?: string[]; // Array de IDs de los recursos asignados
-}
-
-// Interfaz para los recursos que leeremos de la BD
-interface Recurso {
-  _id: string;
-  nombre: string;
-  especialidad: string;
 }
 
 export default function ProyectosPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("Todos");
-
-  // Estados para los modales
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [recursos, setRecursos] = useState<Recurso[]>([]); // Estado para los recursos
   const [isLoading, setIsLoading] = useState(true);
 
-  // Formulario de Creación
   const [formData, setFormData] = useState({
     nombre: "",
     cliente: "",
     estado: "Planificación",
     fechaInicio: new Date().toISOString().split("T")[0],
   });
-
-  // Estado para guardar temporalmente los datos del proyecto a editar
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -74,18 +54,15 @@ export default function ProyectosPage() {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // URLs del Gateway
   const API_URL =
     process.env.NEXT_PUBLIC_PROJECT_SERVICE_URL ||
     "http://localhost:4000/api/projects";
-  const RESOURCE_API_URL =
-    process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL ||
-    "http://localhost:4000/api/recursos";
 
   const normalizeStatus = (status: string) => {
     if (status === "Completado") return "Finalizado";
-    if (status === "En Tiempo" || status === "Riesgo Leve")
+    if (status === "En Tiempo" || status === "Riesgo Leve") {
       return "En Progreso";
+    }
     if (
       status === "Planificación" ||
       status === "En Progreso" ||
@@ -113,33 +90,26 @@ export default function ProyectosPage() {
         console.error("Error fetching profile photo:", err);
       }
     }
+
     fetchProfilePhoto(email);
   }, []);
 
-  // Función combinada para cargar Proyectos y Recursos
-  const fetchData = async () => {
+  const fetchProyectos = async () => {
     try {
-      setIsLoading(true);
-      const [resProyectos, resRecursos] = await Promise.all([
-        fetch(API_URL, { cache: "no-store" }),
-        fetch(RESOURCE_API_URL, { cache: "no-store" }).catch(() => null),
-      ]);
-
-      const dataProyectos = resProyectos.ok ? await resProyectos.json() : [];
-      const dataRecursos =
-        resRecursos && resRecursos.ok ? await resRecursos.json() : [];
-
-      setProjects(Array.isArray(dataProyectos) ? dataProyectos : []);
-      setRecursos(Array.isArray(dataRecursos) ? dataRecursos : []);
+      const res = await fetch(API_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("Error en el servidor");
+      const data = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error conectando al Gateway:", error);
+      console.error("Error de conexión al Gateway:", error);
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchProyectos();
   }, []);
 
   const handleCrearProyecto = async (e: React.FormEvent) => {
@@ -159,7 +129,25 @@ export default function ProyectosPage() {
           estado: "Planificación",
           fechaInicio: new Date().toISOString().split("T")[0],
         });
-        fetchData(); // Recargar datos
+
+        await fetch("/api/notificaciones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "project",
+            title: "Nuevo proyecto creado",
+            message: `Proyecto '${formData.nombre}' fue creado para ${formData.cliente}.`,
+            metadata: {
+              nombre: formData.nombre,
+              cliente: formData.cliente,
+              estado: formData.estado,
+              fechaInicio: formData.fechaInicio,
+            },
+          }),
+        });
+
+        setIsLoading(true);
+        fetchProyectos();
       } else {
         alert("Error al crear el proyecto en la Base de Datos.");
       }
@@ -168,52 +156,13 @@ export default function ProyectosPage() {
     }
   };
 
-  // NUEVA FUNCIÓN: Actualizar Proyecto (PUT)
-  const handleActualizarProyecto = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProject?._id) return;
-
-    try {
-      const res = await fetch(`${API_URL}/${editingProject._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          estado: editingProject.estado,
-          equipo: editingProject.equipo || [],
-        }),
-      });
-
-      if (res.ok) {
-        setShowEditProjectModal(false);
-        setEditingProject(null);
-        fetchData(); // Recargar datos para ver los cambios
-      } else {
-        alert("Error al actualizar el proyecto.");
-      }
-    } catch (error) {
-      console.error("Error al actualizar:", error);
-    }
-  };
-
-  // Ayudante para manejar las casillas de verificación (Checkboxes) de recursos
-  const handleToggleRecurso = (recursoId: string) => {
-    if (!editingProject) return;
-    const currentEquipo = editingProject.equipo || [];
-
-    // Si ya lo tiene, lo quitamos; si no lo tiene, lo agregamos
-    const nuevoEquipo = currentEquipo.includes(recursoId)
-      ? currentEquipo.filter((id) => id !== recursoId)
-      : [...currentEquipo, recursoId];
-
-    setEditingProject({ ...editingProject, equipo: nuevoEquipo });
-  };
-
   const handleEliminar = async (id: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar este proyecto?")) return;
+
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       if (res.ok) {
-        fetchData();
+        fetchProyectos();
       } else {
         alert("Error al eliminar el proyecto.");
       }
@@ -367,10 +316,6 @@ export default function ProyectosPage() {
                             <p className="text-sm text-slate-600">
                               Cliente: {project.cliente}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1">
-                              <Users size={14} />
-                              {project.equipo?.length || 0} recursos asignados
-                            </p>
                           </div>
                         </div>
 
@@ -392,18 +337,6 @@ export default function ProyectosPage() {
                         </div>
 
                         <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 border-opacity-50">
-                          {/* BOTÓN PARA ABRIR MODAL DE EDICIÓN */}
-                          <button
-                            onClick={() => {
-                              setEditingProject(project);
-                              setShowEditProjectModal(true);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:bg-indigo-50 rounded transition-colors text-sm font-medium"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Editar / Asignar
-                          </button>
-
                           <button
                             onClick={() => handleEliminar(project._id!)}
                             className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors text-sm font-medium"
@@ -422,7 +355,6 @@ export default function ProyectosPage() {
         </div>
       </main>
 
-      {/* MODAL PARA CREAR PROYECTO */}
       {showNewProjectModal && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
@@ -478,6 +410,25 @@ export default function ProyectosPage() {
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Estado
+                </label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      estado: normalizeStatus(e.target.value),
+                    })
+                  }
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option>Planificación</option>
+                  <option>En Progreso</option>
+                  <option>Finalizado</option>
+                </select>
+              </div>
               <div className="pt-2 flex gap-3 justify-end">
                 <button
                   type="button"
@@ -490,119 +441,7 @@ export default function ProyectosPage() {
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
                 >
-                  Crear
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* NUEVO: MODAL PARA EDITAR Y ASIGNAR RECURSOS */}
-      {showEditProjectModal && editingProject && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center mb-4 shrink-0">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">
-                  Editar Proyecto
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {editingProject.nombre}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowEditProjectModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleActualizarProyecto}
-              className="space-y-4 overflow-y-auto flex-1 pr-2"
-            >
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Estado del Proyecto
-                </label>
-                <select
-                  value={editingProject.estado}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      estado: normalizeStatus(e.target.value),
-                    })
-                  }
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option>Planificación</option>
-                  <option>En Progreso</option>
-                  <option>Finalizado</option>
-                </select>
-              </div>
-
-              {/* LISTA DE RECURSOS PARA ASIGNAR */}
-              <div className="pt-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Asignar Recursos (Equipo)
-                </label>
-
-                {recursos.length === 0 ? (
-                  <p className="text-sm text-slate-500 italic p-3 bg-slate-50 rounded border border-slate-100">
-                    No hay recursos creados. Ve al módulo "Recursos y Capacidad"
-                    para agregarlos.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto p-1">
-                    {recursos.map((recurso) => {
-                      const isAssigned = (editingProject.equipo || []).includes(
-                        recurso._id,
-                      );
-                      return (
-                        <label
-                          key={recurso._id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                            isAssigned
-                              ? "border-indigo-500 bg-indigo-50"
-                              : "border-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isAssigned}
-                            onChange={() => handleToggleRecurso(recurso._id)}
-                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">
-                              {recurso.nombre}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {recurso.especialidad}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 flex gap-3 justify-end shrink-0 border-t border-slate-100 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowEditProjectModal(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
-                >
-                  Guardar Cambios
+                  Guardar
                 </button>
               </div>
             </form>

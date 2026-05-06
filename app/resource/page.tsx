@@ -9,9 +9,10 @@ import { Plus, Users, X } from "lucide-react";
 interface Recurso {
   _id?: string;
   nombre: string;
+  cargo: string;
   especialidad: string;
+  email: string;
   horasSemanales: number;
-  estado: "Activo" | "Inactivo";
 }
 
 export default function ResourcePage() {
@@ -24,15 +25,14 @@ export default function ResourcePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
+    cargo: "",
     especialidad: "",
+    email: "",
     horasSemanales: 40,
-    estado: "Activo",
   });
 
-  // URL del Gateway
-  const RESOURCE_API_URL =
-    process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL ||
-    "http://localhost:4000/api/recursos";
+  // URL local del API
+  const RESOURCE_API_URL = "/api/recursos";
 
   // Extraemos la función de carga para poder re-usarla al crear un recurso
   const fetchRecursos = useCallback(async () => {
@@ -71,9 +71,10 @@ export default function ResourcePage() {
         setIsModalOpen(false);
         setFormData({
           nombre: "",
+          cargo: "",
           especialidad: "",
+          email: "",
           horasSemanales: 40,
-          estado: "Activo",
         });
         fetchRecursos(); // Recargamos la lista automáticamente
       } else {

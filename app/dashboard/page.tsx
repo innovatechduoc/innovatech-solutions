@@ -59,15 +59,9 @@ export default function InnovatechDashboard() {
           process.env.NEXT_PUBLIC_PROJECT_SERVICE_URL ||
           "http://localhost:4000/api/projects";
 
-        // 👇 1. CREAMOS LA VARIABLE PARA EL GATEWAY DE RECURSOS 👇
-        const RESOURCE_API_URL =
-          process.env.NEXT_PUBLIC_RESOURCE_SERVICE_URL ||
-          "http://localhost:4000/api/recursos";
-
-        // 👇 2. ACTUALIZAMOS EL FETCH PARA USAR LA NUEVA VARIABLE 👇
         const [resProyectos, resRecursos] = await Promise.all([
           fetch(PROJECT_API_URL, { cache: "no-store" }),
-          fetch(RESOURCE_API_URL, { cache: "no-store" }).catch(() => null),
+          fetch("/api/recursos").catch(() => null),
         ]);
 
         const dataProyectos = resProyectos.ok ? await resProyectos.json() : [];
@@ -255,15 +249,10 @@ export default function InnovatechDashboard() {
 
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
                 <div className="p-5 border-b border-slate-100">
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                      <UsersRound size={18} className="text-indigo-500" />
-                      Recursos Registrados
-                    </h3>
-                    <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
-                      {resourceCapacity.length} recursos
-                    </span>
-                  </div>
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <UsersRound size={18} className="text-indigo-500" />
+                    Recursos Registrados
+                  </h3>
                   <p className="text-xs text-slate-500 mt-1">
                     Disponibilidad de equipos multidisciplinarios.
                   </p>
@@ -272,45 +261,26 @@ export default function InnovatechDashboard() {
                   <div className="space-y-4">
                     {resourceCapacity.length === 0 ? (
                       <p className="text-sm text-slate-500 text-center py-4">
-                        No hay recursos registrados en la base de datos local.
+                        No hay recursos en la base de datos local.
                       </p>
                     ) : (
                       resourceCapacity.map((resource: any) => (
                         <div
                           key={resource._id}
-                          className="p-4 border border-slate-100 rounded-lg hover:border-indigo-100 hover:bg-indigo-50/40 transition"
+                          className="p-3 border border-slate-100 rounded-lg"
                         >
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 truncate">
-                                {resource.nombre || "Recurso sin nombre"}
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {resource.nombre}
                               </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {resource.cargo || "Cargo no registrado"}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1">
-                                {resource.especialidad ||
-                                  "Especialidad no registrada"}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1 break-all">
-                                {resource.email || "Email no registrado"}
-                              </p>
-                              <p className="text-xs text-slate-400 mt-1">
-                                {Array.isArray(resource.proyectosAsignados)
-                                  ? `${resource.proyectosAsignados.length} proyectos asignados`
-                                  : "Sin proyectos asignados"}
+                              <p className="text-xs text-slate-500">
+                                {resource.especialidad}
                               </p>
                             </div>
-                            <div className="flex flex-col items-end gap-2 shrink-0">
-                              <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                                {resource.horasSemanales || 0}h / sem
-                              </span>
-                              <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                                ID:{" "}
-                                {resource._id?.slice(-5)?.toUpperCase() ||
-                                  "N/A"}
-                              </span>
-                            </div>
+                            <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                              {resource.horasSemanales}h / sem
+                            </span>
                           </div>
                         </div>
                       ))
