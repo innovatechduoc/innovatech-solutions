@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Empleado from "@/models/Empleado";
-import Notificacion from "@/models/Notificacion";
+// 1. Importamos la conexión específica para Recursos Humanos (HR)
+import { connectResourcesDB } from "@/lib/mongodb";
+// 2. Importamos las funciones inyectoras en lugar de los modelos directos
+import { getEmpleadoModel } from "@/models/Empleado";
+import { getNotificacionModel } from "@/models/Notificacion";
 
-// GET: Sirve para obtener la lista de todos los empleados
 export async function GET() {
   try {
-    await connectDB(); // Siempre abrimos la conexión primero
-    const empleados = await Empleado.find({}); // Busca todos los registros
+    // Conectamos a la base de datos de HR
+    const db = await connectResourcesDB();
+    const Empleado = getEmpleadoModel(db);
+
+    const empleados = await Empleado.find({});
 
     return NextResponse.json(empleados, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
       { error: "Error al obtener empleados" },
       { status: 500 },
@@ -18,17 +22,19 @@ export async function GET() {
   }
 }
 
-// POST: Sirve para guardar un empleado nuevo en la base de datos
 export async function POST(request: Request) {
   try {
-    await connectDB();
+    // Conectamos a la base de datos de HR
+    const db = await connectResourcesDB();
+    const Empleado = getEmpleadoModel(db);
+    const Notificacion = getNotificacionModel(db);
 
-    // Obtenemos los datos que nos enviará el frontend
     const body = await request.json();
 
-    // Le decimos a Mongoose que cree el registro usando nuestro Molde
+    // Creamos el empleado en la base de datos de HR
     const nuevoEmpleado = await Empleado.create(body);
 
+    // Creamos la notificación (se guardará en la misma base de datos de HR)
     await Notificacion.create({
       type: "employee",
       title: "Nuevo usuario agregado",
@@ -41,7 +47,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(nuevoEmpleado, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
       { error: "Error al crear el empleado" },
       { status: 400 },
