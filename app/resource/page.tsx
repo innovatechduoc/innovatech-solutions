@@ -13,6 +13,7 @@ interface Recurso {
   especialidad: string;
   email: string;
   horasSemanales: number;
+  estado: "Activo" | "Inactivo";
 }
 
 export default function ResourcePage() {
@@ -29,6 +30,7 @@ export default function ResourcePage() {
     especialidad: "",
     email: "",
     horasSemanales: 40,
+    estado: "Activo",
   });
 
   // URL local del API
@@ -75,6 +77,7 @@ export default function ResourcePage() {
           especialidad: "",
           email: "",
           horasSemanales: 40,
+          estado: "Activo",
         });
         fetchRecursos(); // Recargamos la lista automáticamente
       } else {

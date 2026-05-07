@@ -1,3 +1,4 @@
+// models/Tarea.ts
 import mongoose from "mongoose";
 
 const TareaSchema = new mongoose.Schema(
@@ -14,9 +15,12 @@ const TareaSchema = new mongoose.Schema(
       ref: "Proyecto",
       required: true,
     },
-    responsableId: { type: mongoose.Schema.Types.ObjectId, ref: "Empleado" }, // Asignación de responsables [cite: 79]
+    responsableId: { type: mongoose.Schema.Types.ObjectId, ref: "Empleado" },
   },
   { timestamps: true },
 );
 
-export default mongoose.models.Tarea || mongoose.model("Tarea", TareaSchema);
+// LA CLAVE: Exportar la función inyectora
+export const getTareaModel = (conn: mongoose.Connection) => {
+  return conn.models.Tarea || conn.model("Tarea", TareaSchema);
+};

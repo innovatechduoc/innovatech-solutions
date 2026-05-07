@@ -1,19 +1,23 @@
-// app/api/projects/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { connectProjectsDB } from "../../../../lib/mongodb";
-import { getProyectoModel } from "../../../../models/Proyecto";
+import { connectProjectsDB } from "@/lib/mongodb";
+import { getProyectoModel } from "@/models/Proyecto";
+
+// 1. Declaramos que params es una Promesa
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await connectProjectsDB();
-    const { id } = params;
+    // 2. Usamos await para extraer el id real
+    const { id } = await params;
+
+    // 3. Tu lógica de base de datos normal
     const db = await connectProjectsDB();
     const Proyecto = getProyectoModel(db);
-    const proyectoEliminado = await Proyecto.findByIdAndDelete(id);
 
-    if (!proyectoEliminado) {
+    const deletedProject = await Proyecto.findByIdAndDelete(id);
+
+    if (!deletedProject) {
       return NextResponse.json(
         { error: "Proyecto no encontrado" },
         { status: 404 },
@@ -22,23 +26,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-export async function GET() {
-  try {
-    console.log("Intentando conectar a Mongo...");
-    const db = await connectProjectsDB();
-    const Proyecto = getProyectoModel(db);
-
-    console.log("Buscando proyectos en la colección...");
-    const proyectos = await Proyecto.find({});
-
-    console.log("Proyectos encontrados:", proyectos.length);
-    return NextResponse.json(proyectos, { status: 200 });
-  } catch (error: any) {
-    console.error("ERROR EN LA API DE PROYECTOS:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
