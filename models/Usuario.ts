@@ -11,5 +11,6 @@ const UsuarioSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.models.Usuario ||
-  mongoose.model("Usuario", UsuarioSchema);
+export const getUsuarioModel = (conn: mongoose.Connection) => {
+  return conn.models.Usuario || conn.model("Usuario", UsuarioSchema);
+};

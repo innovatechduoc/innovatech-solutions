@@ -12,12 +12,19 @@ import {
   Plus,
   Search,
   Target,
-  TrendingUp,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
+
+// 1. Actualizamos interfaces para incluir Recursos y el Equipo poblado
+interface Recurso {
+  _id: string;
+  nombre: string;
+  especialidad: string;
+}
 
 interface Project {
   _id?: string;
@@ -26,6 +33,7 @@ interface Project {
   estado: string;
   progress?: number;
   fechaInicio: string;
+  equipo?: Recurso[]; // Viene poblado desde el backend
 }
 
 export default function ProyectosPage() {
@@ -35,14 +43,18 @@ export default function ProyectosPage() {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
   const [projects, setProjects] = useState<Project[]>([]);
+  const [recursos, setRecursos] = useState<Recurso[]>([]); // Estado para los recursos
   const [isLoading, setIsLoading] = useState(true);
 
+  // 2. Agregamos 'equipo' al estado del formulario
   const [formData, setFormData] = useState({
     nombre: "",
     cliente: "",
     estado: "Planificación",
     fechaInicio: new Date().toISOString().split("T")[0],
+    equipo: [] as string[], // Guardará los IDs de los seleccionados
   });
 
   const handleLogout = () => {
@@ -54,15 +66,13 @@ export default function ProyectosPage() {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  const API_URL =
-    process.env.NEXT_PUBLIC_PROJECT_SERVICE_URL ||
-    "http://localhost:4000/api/projects";
+  const API_URL = "/api/proyectos";
+  const RECURSOS_API_URL = "/api/recursos";
 
   const normalizeStatus = (status: string) => {
     if (status === "Completado") return "Finalizado";
-    if (status === "En Tiempo" || status === "Riesgo Leve") {
+    if (status === "En Tiempo" || status === "Riesgo Leve")
       return "En Progreso";
-    }
     if (
       status === "Planificación" ||
       status === "En Progreso" ||
@@ -71,6 +81,15 @@ export default function ProyectosPage() {
       return status;
     }
     return "Planificación";
+  };
+
+  // Función para calcular progreso automático
+  const calcularProgreso = (estado: string) => {
+    const estadoNormalizado = normalizeStatus(estado);
+    if (estadoNormalizado === "Planificación") return 0;
+    if (estadoNormalizado === "En Progreso") return 50;
+    if (estadoNormalizado === "Finalizado") return 100;
+    return 0;
   };
 
   useEffect(() => {
@@ -90,35 +109,76 @@ export default function ProyectosPage() {
         console.error("Error fetching profile photo:", err);
       }
     }
-
     fetchProfilePhoto(email);
   }, []);
 
-  const fetchProyectos = async () => {
+  // Obtenemos Proyectos y Recursos simultáneamente
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      const res = await fetch(API_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error("Error en el servidor");
-      const data = await res.json();
-      setProjects(Array.isArray(data) ? data : []);
+      const [resProyectos, resRecursos] = await Promise.all([
+        fetch(API_URL, { cache: "no-store" }),
+        fetch(RECURSOS_API_URL, { cache: "no-store" }),
+      ]);
+
+      if (resProyectos.ok) {
+        const dataP = await resProyectos.json();
+        setProjects(Array.isArray(dataP) ? dataP : []);
+      }
+
+      if (resRecursos.ok) {
+        const dataR = await resRecursos.json();
+        setRecursos(Array.isArray(dataR) ? dataR : []);
+      }
     } catch (error) {
-      console.error("Error de conexión al Gateway:", error);
-      setProjects([]);
+      console.error("Error de conexión:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProyectos();
+    fetchData();
   }, []);
+
+  // 3. Lógica de exclusividad: Calculamos qué recursos ya están asignados
+  const recursosAsignadosIds = new Set(
+    projects.flatMap((p) => p.equipo?.map((emp) => emp._id) || []),
+  );
+
+  // Filtramos para mostrar solo los disponibles
+  const recursosDisponibles = recursos.filter(
+    (r) => !recursosAsignadosIds.has(r._id),
+  );
+
+  // Manejo de selección múltiple de recursos en el modal
+  const toggleRecurso = (id: string) => {
+    setFormData((prev) => {
+      const yaSeleccionado = prev.equipo.includes(id);
+      return {
+        ...prev,
+        equipo: yaSeleccionado
+          ? prev.equipo.filter((eId) => eId !== id) // Lo quita
+          : [...prev.equipo, id], // Lo agrega
+      };
+    });
+  };
 
   const handleCrearProyecto = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Inyectamos el progreso automático antes de enviar
+    const progresoCalculado = calcularProgreso(formData.estado);
+    const payload = {
+      ...formData,
+      progress: progresoCalculado,
+    };
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -128,26 +188,11 @@ export default function ProyectosPage() {
           cliente: "",
           estado: "Planificación",
           fechaInicio: new Date().toISOString().split("T")[0],
+          equipo: [],
         });
 
-        await fetch("/api/notificaciones", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "project",
-            title: "Nuevo proyecto creado",
-            message: `Proyecto '${formData.nombre}' fue creado para ${formData.cliente}.`,
-            metadata: {
-              nombre: formData.nombre,
-              cliente: formData.cliente,
-              estado: formData.estado,
-              fechaInicio: formData.fechaInicio,
-            },
-          }),
-        });
-
-        setIsLoading(true);
-        fetchProyectos();
+        // Recargamos todo para actualizar disponibilidades
+        fetchData();
       } else {
         alert("Error al crear el proyecto en la Base de Datos.");
       }
@@ -162,7 +207,7 @@ export default function ProyectosPage() {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       if (res.ok) {
-        fetchProyectos();
+        fetchData(); // Recarga para liberar los recursos
       } else {
         alert("Error al eliminar el proyecto.");
       }
@@ -211,7 +256,7 @@ export default function ProyectosPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-slate-500">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-medium">Cargando proyectos desde MongoDB...</p>
+          <p className="font-medium">Cargando datos desde MongoDB...</p>
         </div>
       </div>
     );
@@ -313,16 +358,26 @@ export default function ProyectosPage() {
                                 {getStatusIcon(project.estado)} {project.estado}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-600">
+                            <p className="text-sm text-slate-600 mb-1">
                               Cliente: {project.cliente}
                             </p>
+
+                            {/* Mostrar el equipo asignado en la tarjeta */}
+                            <div className="flex items-center gap-2 text-sm text-slate-500 mt-3 bg-white/50 w-fit px-3 py-1.5 rounded-md border border-slate-200">
+                              <Users className="w-4 h-4 text-slate-400" />
+                              {project.equipo && project.equipo.length > 0
+                                ? project.equipo
+                                    .map((emp) => emp.nombre)
+                                    .join(", ")
+                                : "Sin equipo asignado"}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="mb-4">
+                        <div className="mb-4 mt-4">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-slate-700">
-                              Progreso Estimado
+                              Progreso Automático
                             </span>
                             <span className="text-sm font-semibold text-slate-900">
                               {project.progress || 0}%
@@ -330,7 +385,7 @@ export default function ProyectosPage() {
                           </div>
                           <div className="w-full bg-slate-300 rounded-full h-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full transition-all"
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                               style={{ width: `${project.progress || 0}%` }}
                             />
                           </div>
@@ -341,8 +396,7 @@ export default function ProyectosPage() {
                             onClick={() => handleEliminar(project._id!)}
                             className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors text-sm font-medium"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            Eliminar
+                            <Trash2 className="w-4 h-4" /> Eliminar
                           </button>
                         </div>
                       </div>
@@ -357,7 +411,7 @@ export default function ProyectosPage() {
 
       {showNewProjectModal && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-800">
                 Crear Nuevo Proyecto
@@ -369,6 +423,7 @@ export default function ProyectosPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
             <form onSubmit={handleCrearProyecto} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -396,40 +451,84 @@ export default function ProyectosPage() {
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Fecha de inicio
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.fechaInicio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fechaInicio: e.target.value })
-                  }
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Fecha de inicio
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.fechaInicio}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fechaInicio: e.target.value })
+                    }
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    value={formData.estado}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        estado: normalizeStatus(e.target.value),
+                      })
+                    }
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option>Planificación</option>
+                    <option>En Progreso</option>
+                    <option>Finalizado</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Estado
+
+              {/* Sección de asignación de recursos */}
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Asignar Equipo (Disponibles: {recursosDisponibles.length})
                 </label>
-                <select
-                  value={formData.estado}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      estado: normalizeStatus(e.target.value),
-                    })
-                  }
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option>Planificación</option>
-                  <option>En Progreso</option>
-                  <option>Finalizado</option>
-                </select>
+                {recursosDisponibles.length === 0 ? (
+                  <div className="p-3 bg-amber-50 text-amber-700 rounded-lg text-sm border border-amber-200">
+                    No hay empleados disponibles. Todos están asignados a otros
+                    proyectos.
+                  </div>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50 space-y-1">
+                    {recursosDisponibles.map((recurso) => (
+                      <label
+                        key={recurso._id}
+                        className={`flex items-center p-2 rounded-md cursor-pointer transition-colors ${
+                          formData.equipo.includes(recurso._id)
+                            ? "bg-blue-100 border-blue-200 border"
+                            : "hover:bg-slate-200 border border-transparent"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 rounded border-slate-300 mr-3"
+                          checked={formData.equipo.includes(recurso._id)}
+                          onChange={() => toggleRecurso(recurso._id)}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-900">
+                            {recurso.nombre}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {recurso.especialidad}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="pt-2 flex gap-3 justify-end">
+
+              <div className="pt-4 mt-4 border-t border-slate-200 flex gap-3 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowNewProjectModal(false)}
@@ -441,7 +540,7 @@ export default function ProyectosPage() {
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
                 >
-                  Guardar
+                  Crear y Asignar
                 </button>
               </div>
             </form>

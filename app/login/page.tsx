@@ -41,15 +41,11 @@ export default function LoginPage() {
         return;
       }
 
-      // Usamos la variable de entorno que apunta al puerto 3001
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        },
-      );
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await response.json();
 

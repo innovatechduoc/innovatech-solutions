@@ -1,23 +1,41 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Empleado from "@/models/Empleado";
+// app/api/recursos/route.ts
+import { NextResponse, NextRequest } from "next/server";
+// ¡Cambio clave aquí! Importamos la nueva conexión
+import { connectResourcesDB } from "@/lib/mongodb";
+import { getEmpleadoModel } from "@/models/Empleado";
 
 export async function GET() {
-  await connectDB();
-  const recursos = await Empleado.find({});
-  return NextResponse.json(recursos);
+  try {
+    // 1. Abrimos la conexión hacia la base de datos innovatech_hr
+    const db = await connectResourcesDB();
+
+    // 2. Registramos el modelo Empleado en ESA conexión específica
+    const Empleado = getEmpleadoModel(db);
+
+    // 3. Traemos los empleados
+    const empleados = await Empleado.find({}).sort({ createdAt: -1 });
+
+    return NextResponse.json(empleados, { status: 200 });
+  } catch (error: any) {
+    console.error("Error en recursos:", error.message);
+    return NextResponse.json(
+      { error: "Error al obtener recursos" },
+      { status: 500 },
+    );
+  }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-    const data = await req.json();
-    const nuevoRecurso = await Empleado.create(data);
-    return NextResponse.json(nuevoRecurso, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al crear recurso" },
-      { status: 400 },
-    );
+    // Aplicamos la misma conexión en el POST
+    const db = await connectResourcesDB();
+    const Empleado = getEmpleadoModel(db);
+
+    const body = await request.json();
+    const nuevoEmpleado = await Empleado.create(body);
+
+    return NextResponse.json(nuevoEmpleado, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

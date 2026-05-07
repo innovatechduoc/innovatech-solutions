@@ -15,5 +15,9 @@ const NotificacionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.models.Notificacion ||
-  mongoose.model("Notificacion", NotificacionSchema);
+// Al final de tu modelo Notificacion.ts
+export const getNotificacionModel = (conn: any) => {
+  return (
+    conn.models.Notificacion || conn.model("Notificacion", NotificacionSchema)
+  );
+};

@@ -22,5 +22,6 @@ const ProyectoSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.models.Proyecto ||
-  mongoose.model("Proyecto", ProyectoSchema);
+export const getProyectoModel = (conn: mongoose.Connection) => {
+  return conn.models.Proyecto || conn.model("Proyecto", ProyectoSchema);
+};

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Notificacion from "@/models/Notificacion";
+import { connectProjectsDB } from "@/lib/mongodb";
+import { getNotificacionModel } from "@/models/Notificacion"; // Ajusta la ruta si tu carpeta models está dentro de lib
 
 export async function GET(request: Request) {
   try {
-    await connectDB();
+    // 1. Usamos la conexión específica
+    const db = await connectProjectsDB();
+    // 2. Registramos el modelo en esa conexión
+    const Notificacion = getNotificacionModel(db);
 
     const { searchParams } = new URL(request.url);
     const limit = Number(searchParams.get("limit") || "5");
@@ -25,7 +28,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
+    // Aplicamos el mismo patrón
+    const db = await connectProjectsDB();
+    const Notificacion = getNotificacionModel(db);
 
     const body = await request.json();
     const { title, message, type = "system", metadata = {} } = body;
@@ -56,7 +61,9 @@ export async function POST(request: Request) {
 
 export async function PATCH() {
   try {
-    await connectDB();
+    // Aplicamos el mismo patrón
+    const db = await connectProjectsDB();
+    const Notificacion = getNotificacionModel(db);
 
     const result = await Notificacion.updateMany(
       { isRead: false },

@@ -16,4 +16,10 @@ const EmpleadoSchema = new Schema(
 
 const Empleado = models.Empleado || model("Empleado", EmpleadoSchema);
 
-export default Empleado;
+// Al final de tu modelo Empleado.ts
+export const getEmpleadoModel = (conn: any) => {
+  // El tercer parámetro "recursos" fuerza a Mongoose a usar esa colección exacta
+  return (
+    conn.models.Empleado || conn.model("Empleado", EmpleadoSchema, "recursos")
+  );
+};

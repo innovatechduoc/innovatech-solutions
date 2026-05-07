@@ -55,9 +55,9 @@ export default function InnovatechDashboard() {
   useEffect(() => {
     async function cargarDatos() {
       try {
-        const PROJECT_API_URL =
-          process.env.NEXT_PUBLIC_PROJECT_SERVICE_URL ||
-          "http://localhost:4000/api/projects";
+        // Elimina la versión antigua que usa variables de entorno o localhost:4000
+        // y déjala simplemente así:
+        const PROJECT_API_URL = "/api/proyectos";
 
         const [resProyectos, resRecursos] = await Promise.all([
           fetch(PROJECT_API_URL, { cache: "no-store" }),
