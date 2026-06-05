@@ -24,6 +24,8 @@ export default function ResourcePage() {
 
   // Estados para el Modal de creación
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Estado para saber qué recurso estamos viendo en el modal de detalles
+  const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     cargo: "",
@@ -163,7 +165,11 @@ export default function ResourcePage() {
                       <div className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-md">
                         {r.horasSemanales} h / sem
                       </div>
-                      <button className="text-sm text-slate-400 hover:text-blue-600 transition">
+                      {/* Cambia tu botón actual por este */}
+                      <button 
+                        onClick={() => setRecursoSeleccionado(r)}
+                        className="text-sm text-slate-400 hover:text-blue-600 transition"
+                      >
                         Ver detalles
                       </button>
                     </div>
@@ -223,6 +229,40 @@ export default function ResourcePage() {
                 />
               </div>
 
+              {/* INPUT PARA EL CARGO */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Cargo
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={formData.cargo}
+                  onChange={(e) =>
+                    setFormData({ ...formData, cargo: e.target.value })
+                  }
+                  className="w-full p-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej: Ingeniero de Software"
+                />
+              </div>
+
+              {/* INPUT PARA EL EMAIL */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Correo Electrónico
+                </label>
+                <input
+                  required
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="w-full p-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej: correo@empresa.com"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -277,6 +317,66 @@ export default function ResourcePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE VER DETALLES */}
+      {recursoSeleccionado && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">
+                Detalles del Recurso
+              </h2>
+              <button
+                onClick={() => setRecursoSeleccionado(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Nombre</p>
+                <p className="text-lg font-semibold text-slate-900">{recursoSeleccionado.nombre}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Cargo</p>
+                <p className="text-base text-slate-900">{recursoSeleccionado.cargo}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Especialidad</p>
+                <p className="text-base text-slate-900">{recursoSeleccionado.especialidad}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Correo Electrónico</p>
+                <p className="text-base text-slate-900">{recursoSeleccionado.email}</p>
+              </div>
+              <div className="flex gap-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Horas</p>
+                  <p className="text-base text-slate-900">{recursoSeleccionado.horasSemanales}h / sem</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Estado</p>
+                  <span className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${
+                    recursoSeleccionado.estado === "Activo" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  }`}>
+                    {recursoSeleccionado.estado || "Desconocido"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 flex justify-end">
+              <button
+                onClick={() => setRecursoSeleccionado(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

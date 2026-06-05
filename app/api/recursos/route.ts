@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(nuevoEmpleado, { status: 201 });
   } catch (error: any) {
+    // ¡Añade esta línea para ver el chisme completo en tu terminal!
+    console.error("Error exacto de Mongoose:", error.message); 
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

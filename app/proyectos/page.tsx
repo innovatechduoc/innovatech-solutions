@@ -46,6 +46,8 @@ export default function ProyectosPage() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [recursos, setRecursos] = useState<Recurso[]>([]); // Estado para los recursos
+  // Estado para saber qué proyecto estamos viendo en el modal de detalles
+  const [proyectoSeleccionado, setProyectoSeleccionado] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 2. Agregamos 'equipo' al estado del formulario
@@ -56,6 +58,14 @@ export default function ProyectosPage() {
     fechaInicio: new Date().toISOString().split("T")[0],
     equipo: [] as string[], // Guardará los IDs de los seleccionados
   });
+  // Función mágica para cruzar IDs con los datos reales
+  const obtenerDetallesEquipo = (equipoIds: any[]) => {
+    if (!equipoIds || !Array.isArray(equipoIds)) return [];
+    
+    return equipoIds
+      .map((id) => recursos.find((r) => r._id === id)) // Busca el empleado por ID
+      .filter(Boolean); // Elimina los que no encuentre (undefined)
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -340,6 +350,8 @@ export default function ProyectosPage() {
               <div className="grid gap-6 mb-12">
                 {filteredProjects.map((project) => {
                   const statusColors = getStatusColor(project.estado);
+                  const estadoNormalizado = normalizeStatus(project.estado);
+                  const progresoReal = estadoNormalizado === "Finalizado" ? 100 : (project.progress || 0);
                   return (
                     <div
                       key={project._id}
@@ -363,12 +375,11 @@ export default function ProyectosPage() {
                             </p>
 
                             {/* Mostrar el equipo asignado en la tarjeta */}
+                            {/* Mostrar cantidad de equipo asignado en la tarjeta */}
                             <div className="flex items-center gap-2 text-sm text-slate-500 mt-3 bg-white/50 w-fit px-3 py-1.5 rounded-md border border-slate-200">
                               <Users className="w-4 h-4 text-slate-400" />
                               {project.equipo && project.equipo.length > 0
-                                ? project.equipo
-                                    .map((emp) => emp.nombre)
-                                    .join(", ")
+                                ? `${project.equipo.length} integrante${project.equipo.length > 1 ? "s" : ""}`
                                 : "Sin equipo asignado"}
                             </div>
                           </div>
@@ -380,18 +391,24 @@ export default function ProyectosPage() {
                               Progreso Automático
                             </span>
                             <span className="text-sm font-semibold text-slate-900">
-                              {project.progress || 0}%
+                              {progresoReal}%
                             </span>
                           </div>
                           <div className="w-full bg-slate-300 rounded-full h-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${project.progress || 0}%` }}
+                              style={{ width: `${progresoReal}%` }}
                             />
                           </div>
                         </div>
 
                         <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 border-opacity-50">
+                          <button
+                            onClick={() => setProyectoSeleccionado(project)}
+                            className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded transition-colors text-sm font-medium"
+                          >
+                            <Search className="w-4 h-4" /> Ver Detalles
+                          </button>
                           <button
                             onClick={() => handleEliminar(project._id!)}
                             className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors text-sm font-medium"
@@ -544,6 +561,84 @@ export default function ProyectosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE VER DETALLES DEL PROYECTO */}
+      {proyectoSeleccionado && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">
+                Detalles del Proyecto
+              </h2>
+              <button
+                onClick={() => setProyectoSeleccionado(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Nombre</p>
+                  <p className="text-lg font-semibold text-slate-900">{proyectoSeleccionado.nombre}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Cliente</p>
+                  <p className="text-lg text-slate-900">{proyectoSeleccionado.cliente}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Estado</p>
+                  <span className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${getStatusColor(proyectoSeleccionado.estado).badge}`}>
+                    {proyectoSeleccionado.estado}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Fecha de Inicio</p>
+                  <p className="text-base text-slate-900 mt-1">
+                    {/* Nos aseguramos de formatear la fecha para que no se vea como texto de robot */}
+                    {new Date(proyectoSeleccionado.fechaInicio).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* LISTA DEL EQUIPO */}
+              <div>
+                <p className="text-sm font-medium text-slate-500 mb-2">Equipo Asignado</p>
+                {proyectoSeleccionado.equipo && proyectoSeleccionado.equipo.length > 0 ? (
+                  <ul className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                    {/* 👇 AQUÍ ESTÁ EL CAMBIO CLAVE 👇 */}
+                    {obtenerDetallesEquipo(proyectoSeleccionado.equipo).map((miembro: any) => (
+                      <li key={miembro._id} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm">
+                        <span className="font-medium text-slate-800">{miembro.nombre}</span>
+                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                          {miembro.especialidad}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-3 bg-slate-50 text-slate-500 rounded-lg text-sm border border-slate-200">
+                    No hay personal asignado a este proyecto.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-6 flex justify-end">
+              <button
+                onClick={() => setProyectoSeleccionado(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
