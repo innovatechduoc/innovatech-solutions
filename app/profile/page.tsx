@@ -67,10 +67,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const AUTH_API_URL =
-    process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
-    "http://localhost:4000/api/auth";
-  const PROFILE_ENDPOINT = `${AUTH_API_URL}/profile`;
+  const PROFILE_ENDPOINT = "/api/profile";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -98,6 +95,12 @@ export default function ProfilePage() {
         const data = await res.json();
         setUsuario(data.usuario || null);
         setEmpleado(data.empleado || null);
+
+        // ✨ MAGIA AQUÍ: Sacamos la foto directamente del usuario
+        // Asumiendo que tu backend devuelve la foto dentro de data.usuario.profilePhoto
+        setProfilePhoto(
+          data.usuario?.profilePhoto || data.profilePhoto || null,
+        );
       } catch (err) {
         console.error(err);
         setError("Error al cargar el perfil");
@@ -108,28 +111,6 @@ export default function ProfilePage() {
 
     fetchProfile();
   }, [router, PROFILE_ENDPOINT]);
-
-  useEffect(() => {
-    const email =
-      usuario?.email || empleado?.email || localStorage.getItem("email") || "";
-    if (!email) return;
-
-    async function fetchProfilePhoto() {
-      try {
-        const res = await fetch(
-          `${PROFILE_ENDPOINT}?email=${encodeURIComponent(email)}`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setProfilePhoto(data.profilePhoto || null);
-        }
-      } catch (err) {
-        console.error("Error fetching profile photo:", err);
-      }
-    }
-
-    fetchProfilePhoto();
-  }, [usuario?.email, empleado?.email, PROFILE_ENDPOINT]);
 
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -149,23 +130,84 @@ export default function ProfilePage() {
       const result = typeof reader.result === "string" ? reader.result : "";
       if (!result) return;
 
-      try {
-        const res = await fetch(PROFILE_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, profilePhoto: result }),
-        });
+      // Extraemos la llamada al backend para mantener todo ordenado
+      const enviarFotoAlBackend = async (email: string, base64Data: string) => {
+        try {
+          const res = await fetch(PROFILE_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, profilePhoto: base64Data }),
+          });
 
-        if (res.ok) {
-          setProfilePhoto(result);
-          setError("");
-        } else {
-          setError("Error al guardar la foto");
+          if (res.ok) {
+            setProfilePhoto(base64Data);
+            setError("");
+          } else {
+            setError("Error al guardar la foto");
+          }
+        } catch (err) {
+          console.error(err);
+          setError("Error al cargar la foto");
         }
-      } catch (err) {
-        console.error(err);
-        setError("Error al cargar la foto");
-      }
+      };
+
+      // La nueva función optimizada para manejar la imagen
+      const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          setError("Solo se permiten archivos de imagen");
+          return;
+        }
+
+        const email =
+          usuario?.email || empleado?.email || localStorage.getItem("email");
+        if (!email) return;
+
+        // Creamos una URL temporal para leer la imagen original
+        const imageUrl = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = () => {
+          // Configuramos un tamaño máximo. 300x300 es perfecto para un perfil
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          // Calculamos la proporción para que tu cara no se deforme
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          // Dibujamos la imagen en un canvas invisible
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convertimos a JPEG con 70% de calidad (Drástica reducción de peso)
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+          // Enviamos la versión ligera a la base de datos
+          enviarFotoAlBackend(email, compressedBase64);
+
+          // Limpiamos la memoria del navegador
+          URL.revokeObjectURL(imageUrl);
+        };
+
+        img.src = imageUrl;
+      };
     };
     reader.readAsDataURL(file);
   };

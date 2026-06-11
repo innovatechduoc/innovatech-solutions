@@ -39,6 +39,25 @@ export default function Header({
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
+  // 👇 1. NUEVO ESTADO PARA LAS INICIALES
+  const [userInitials, setUserInitials] = useState("US"); // "US" por defecto (Usuario)
+
+  // 👇 2. NUEVA FUNCIÓN PARA EXTRAER INICIALES DEL CORREO
+  const getInitials = (email: string | null) => {
+    if (!email) return "US";
+    let s = email.trim();
+    if (s.includes("@")) {
+      s = s.split("@")[0].replace(/[._]/g, " "); // "juan.perez@..." -> "juan perez"
+    }
+    const parts = s.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "US";
+    // Tomamos la primera letra de las dos primeras palabras
+    return parts
+      .map((p) => p[0].toUpperCase())
+      .join("")
+      .slice(0, 2);
+  };
+
   const unreadNotifications = notifications.filter((item) => !item.isRead);
   const unreadCount = unreadNotifications.length;
 
@@ -87,6 +106,14 @@ export default function Header({
       await markNotificationsAsRead();
     }
   };
+
+  // 👇 3. EFECTO PARA LEER EL LOCALSTORAGE
+  useEffect(() => {
+    // Leemos el correo de la sesión actual
+    const storedEmail = localStorage.getItem("email");
+    // Calculamos y guardamos las iniciales
+    setUserInitials(getInitials(storedEmail));
+  }, []);
 
   useEffect(() => {
     if (!showLogoutModal) return;
@@ -277,7 +304,8 @@ export default function Header({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-blue-100 text-blue-700">
-                DR
+                {/* 👇 4. AQUÍ USAMOS LA VARIABLE EN LUGAR DE "DR" */}
+                {userInitials}
               </div>
             )}
           </Link>
