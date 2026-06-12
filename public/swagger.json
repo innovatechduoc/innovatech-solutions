@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API de Innovatech Solutions",
+    "version": "1.0.0",
+    "description": "Documentación de los Microservicios Serverless de Gestión."
+  },
+  "paths": {
+    "/api/proyectos": {
+      "get": {
+        "summary": "Obtener todos los proyectos",
+        "responses": {
+          "200": { "description": "Lista de proyectos obtenida exitosamente" }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo proyecto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Proyecto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Proyecto creado exitosamente" }
+        }
+      }
+    },
+    "/api/proyectos/{id}": {
+      "delete": {
+        "summary": "Eliminar un proyecto específico",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID único del proyecto a eliminar"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Proyecto eliminado exitosamente" }
+        }
+      }
+    },
+    "/api/recursos": {
+      "get": {
+        "summary": "Obtener la lista de colaboradores",
+        "responses": {
+          "200": { "description": "Lista de recursos obtenida exitosamente" }
+        }
+      },
+      "post": {
+        "summary": "Registrar un nuevo colaborador",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empleado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Colaborador registrado exitosamente" }
+        }
+      }
+    },
+    "/api/recursos/{id}": {
+      "delete": {
+        "summary": "Eliminar un colaborador específico",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID único del colaborador a eliminar"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Colaborador eliminado exitosamente" }
+        }
+      }
+    },
+    "/api/login": {
+      "get": {
+        "summary": "Verificar el estado de la sesión actual",
+        "responses": {
+          "200": { "description": "Estado de sesión obtenido" }
+        }
+      },
+      "post": {
+        "summary": "Autenticar un usuario en el sistema",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Usuario"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Usuario autenticado exitosamente" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Empleado": {
+        "type": "object",
+        "required": ["nombre", "cargo", "email", "especialidad"],
+        "properties": {
+          "nombre": { "type": "string", "example": "Juan Pérez" },
+          "cargo": { "type": "string", "example": "Desarrollador Backend" },
+          "email": { "type": "string", "example": "juan.perez@innovatech.com" },
+          "especialidad": { "type": "string", "example": "Node.js" },
+          "horasSemanales": { "type": "number", "default": 40 },
+          "estado": {
+            "type": "string",
+            "enum": ["Activo", "Inactivo"],
+            "default": "Activo"
+          }
+        }
+      },
+      "Proyecto": {
+        "type": "object",
+        "required": ["nombre", "cliente", "fechaInicio"],
+        "properties": {
+          "nombre": { "type": "string", "example": "Migración Cloud" },
+          "cliente": { "type": "string", "example": "BancoEstado" },
+          "estado": {
+            "type": "string",
+            "enum": ["Planificación", "En Progreso", "Finalizado"],
+            "default": "Planificación"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-15T00:00:00Z"
+          }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "example": "admin@innovatech.com" },
+          "password": { "type": "string", "example": "123456" }
+        }
+      }
+    }
+  }
+}

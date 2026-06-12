@@ -6,11 +6,19 @@ import {
   LayoutDashboard,
   FolderKanban,
   UsersRound,
+  LineChart, // <-- Ícono para Analíticas
+  BookOpen, // <-- Ícono para Swagger
   ShieldCheck,
   X,
 } from "lucide-react";
 
-type ActiveModule = "dashboard" | "proyectos" | "resource";
+// 1. Ampliamos el tipo para que TypeScript acepte las nuevas páginas
+type ActiveModule =
+  | "dashboard"
+  | "proyectos"
+  | "resource"
+  | "analytics"
+  | "swagger";
 
 interface SidebarProps {
   activeModule: ActiveModule;
@@ -23,10 +31,14 @@ export default function Sidebar({
   isMobileMenuOpen,
   onCloseMobileMenu,
 }: SidebarProps) {
+  // 2. Evaluamos los estados activos de todas las rutas
   const dashboardActive = activeModule === "dashboard";
   const projectsActive = activeModule === "proyectos";
   const resourceActive = activeModule === "resource";
+  const analyticsActive = activeModule === "analytics";
+  const swaggerActive = activeModule === "swagger";
 
+  // 3. Agregamos las nuevas páginas al mapa de navegación
   const navItems = [
     {
       href: "/dashboard",
@@ -44,12 +56,24 @@ export default function Sidebar({
       href: "/resource",
       label: "Recursos y Capacidad",
       icon: UsersRound,
-      active: resourceActive, // <-- 2. ¡EL DETALLE ESTÁ AQUÍ! Cambia el 'false' por 'resourceActive'
+      active: resourceActive,
+    },
+    {
+      href: "/kpi",
+      label: "KPIs y Analíticas",
+      icon: LineChart,
+      active: analyticsActive,
+    },
+    {
+      href: "/api-docs",
+      label: "API Docs (Swagger)",
+      icon: BookOpen,
+      active: swaggerActive,
     },
   ];
 
   const desktopSidebar = (
-    <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col border-r border-slate-800">
+    <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col border-r border-slate-800 min-h-screen">
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-2 text-white">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
@@ -74,7 +98,11 @@ export default function Sidebar({
               <a
                 key={item.label}
                 href="#"
-                className={`flex items-center gap-3 p-3 rounded-lg transition ${item.active ? "bg-blue-600/10 text-blue-400" : "hover:bg-slate-800 hover:text-white"}`}
+                className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                  item.active
+                    ? "bg-blue-600/10 text-blue-400"
+                    : "hover:bg-slate-800 hover:text-white"
+                }`}
               >
                 <Icon size={20} />
                 <span className="font-medium">{item.label}</span>
@@ -86,7 +114,11 @@ export default function Sidebar({
             <Link
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 p-3 rounded-lg transition ${item.active ? "bg-blue-600/10 text-blue-400" : "hover:bg-slate-800 hover:text-white"}`}
+              className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                item.active
+                  ? "bg-blue-600/10 text-blue-400"
+                  : "hover:bg-slate-800 hover:text-white"
+              }`}
             >
               <Icon size={20} />
               <span className="font-medium">{item.label}</span>
@@ -147,7 +179,11 @@ export default function Sidebar({
                   <a
                     key={item.label}
                     href="#"
-                    className={`flex items-center gap-3 p-3 rounded-lg transition ${item.active ? "bg-blue-600/10 text-blue-400" : "hover:bg-slate-800 hover:text-white"}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                      item.active
+                        ? "bg-blue-600/10 text-blue-400"
+                        : "hover:bg-slate-800 hover:text-white"
+                    }`}
                     onClick={onCloseMobileMenu}
                   >
                     <Icon size={20} />
@@ -160,7 +196,11 @@ export default function Sidebar({
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition ${item.active ? "bg-blue-600/10 text-blue-400" : "hover:bg-slate-800 hover:text-white"}`}
+                  className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                    item.active
+                      ? "bg-blue-600/10 text-blue-400"
+                      : "hover:bg-slate-800 hover:text-white"
+                  }`}
                   onClick={onCloseMobileMenu}
                 >
                   <Icon size={20} />

@@ -47,7 +47,8 @@ export default function ProyectosPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [recursos, setRecursos] = useState<Recurso[]>([]); // Estado para los recursos
   // Estado para saber qué proyecto estamos viendo en el modal de detalles
-  const [proyectoSeleccionado, setProyectoSeleccionado] = useState<Project | null>(null);
+  const [proyectoSeleccionado, setProyectoSeleccionado] =
+    useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 2. Agregamos 'equipo' al estado del formulario
@@ -61,7 +62,7 @@ export default function ProyectosPage() {
   // Función mágica para cruzar IDs con los datos reales
   const obtenerDetallesEquipo = (equipoIds: any[]) => {
     if (!equipoIds || !Array.isArray(equipoIds)) return [];
-    
+
     return equipoIds
       .map((id) => recursos.find((r) => r._id === id)) // Busca el empleado por ID
       .filter(Boolean); // Elimina los que no encuentre (undefined)
@@ -261,17 +262,6 @@ export default function ProyectosPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-slate-500">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-medium">Cargando datos desde MongoDB...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans relative">
       <Sidebar
@@ -288,141 +278,148 @@ export default function ProyectosPage() {
         />
 
         <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/dashboard"
-                  className="p-2 hover:bg-slate-100 rounded-lg transition"
-                >
-                  <ArrowLeft className="w-5 h-5 text-slate-600" />
-                </Link>
-                <h1 className="text-3xl font-bold text-slate-900">
-                  Gestión de Proyectos
-                </h1>
-              </div>
-              <button
-                onClick={() => setShowNewProjectModal(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <Plus className="w-5 h-5" /> Nuevo Proyecto
-              </button>
+          {/* AQUÍ ESTÁ LA MAGIA: Condicional solo para el contenido */}
+          {isLoading ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4 text-slate-500">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="font-medium">Cargando proyectos...</p>
             </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {["Todos", "Planificación", "En Progreso", "Finalizado"].map(
-                (status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFilterStatus(status)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${filterStatus === status ? "bg-blue-600 text-white" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-300"}`}
+          ) : (
+            <div className="max-w-7xl mx-auto space-y-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard"
+                    className="p-2 hover:bg-slate-100 rounded-lg transition"
                   >
-                    {status}
-                  </button>
-                ),
-              )}
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <div className="relative">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={18}
-                />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar proyectos o clientes..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-transparent rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition outline-none"
-                />
+                    <ArrowLeft className="w-5 h-5 text-slate-600" />
+                  </Link>
+                  <h1 className="text-3xl font-bold text-slate-900">
+                    Gestión de Proyectos
+                  </h1>
+                </div>
+                <button
+                  onClick={() => setShowNewProjectModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Plus className="w-5 h-5" /> Nuevo Proyecto
+                </button>
               </div>
-            </div>
 
-            {filteredProjects.length === 0 ? (
-              <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
-                <FolderKanban className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 font-medium">
-                  No se encontraron proyectos en la Base de Datos
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 mb-12">
-                {filteredProjects.map((project) => {
-                  const statusColors = getStatusColor(project.estado);
-                  const estadoNormalizado = normalizeStatus(project.estado);
-                  const progresoReal = estadoNormalizado === "Finalizado" ? 100 : (project.progress || 0);
-                  return (
-                    <div
-                      key={project._id}
-                      className={`${statusColors.bg} border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow`}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {["Todos", "Planificación", "En Progreso", "Finalizado"].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      onClick={() => setFilterStatus(status)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${filterStatus === status ? "bg-blue-600 text-white" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-300"}`}
                     >
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-xl font-bold text-slate-900">
-                                {project.nombre}
-                              </h3>
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors.badge}`}
-                              >
-                                {getStatusIcon(project.estado)} {project.estado}
+                      {status}
+                    </button>
+                  ),
+                )}
+              </div>
+
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar proyectos o clientes..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-transparent rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition outline-none"
+                  />
+                </div>
+              </div>
+
+              {filteredProjects.length === 0 ? (
+                <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
+                  <FolderKanban className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-600 font-medium">
+                    No se encontraron proyectos en la Base de Datos
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-6 mb-12">
+                  {filteredProjects.map((project) => {
+                    const statusColors = getStatusColor(project.estado);
+                    const estadoNormalizado = normalizeStatus(project.estado);
+                    const progresoReal = calcularProgreso(project.estado);
+                    return (
+                      <div
+                        key={project._id}
+                        className={`${statusColors.bg} border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow`}
+                      >
+                        <div className="p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-xl font-bold text-slate-900">
+                                  {project.nombre}
+                                </h3>
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors.badge}`}
+                                >
+                                  {getStatusIcon(project.estado)}{" "}
+                                  {project.estado}
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-600 mb-1">
+                                Cliente: {project.cliente}
+                              </p>
+
+                              <div className="flex items-center gap-2 text-sm text-slate-500 mt-3 bg-white/50 w-fit px-3 py-1.5 rounded-md border border-slate-200">
+                                <Users className="w-4 h-4 text-slate-400" />
+                                {project.equipo && project.equipo.length > 0
+                                  ? `${project.equipo.length} integrante${project.equipo.length > 1 ? "s" : ""}`
+                                  : "Sin equipo asignado"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mb-4 mt-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-slate-700">
+                                Progreso Automático
+                              </span>
+                              <span className="text-sm font-semibold text-slate-900">
+                                {progresoReal}%
                               </span>
                             </div>
-                            <p className="text-sm text-slate-600 mb-1">
-                              Cliente: {project.cliente}
-                            </p>
-
-                            {/* Mostrar el equipo asignado en la tarjeta */}
-                            {/* Mostrar cantidad de equipo asignado en la tarjeta */}
-                            <div className="flex items-center gap-2 text-sm text-slate-500 mt-3 bg-white/50 w-fit px-3 py-1.5 rounded-md border border-slate-200">
-                              <Users className="w-4 h-4 text-slate-400" />
-                              {project.equipo && project.equipo.length > 0
-                                ? `${project.equipo.length} integrante${project.equipo.length > 1 ? "s" : ""}`
-                                : "Sin equipo asignado"}
+                            <div className="w-full bg-slate-300 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${progresoReal}%` }}
+                              />
                             </div>
                           </div>
-                        </div>
 
-                        <div className="mb-4 mt-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-700">
-                              Progreso Automático
-                            </span>
-                            <span className="text-sm font-semibold text-slate-900">
-                              {progresoReal}%
-                            </span>
+                          <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 border-opacity-50">
+                            <button
+                              onClick={() => setProyectoSeleccionado(project)}
+                              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded transition-colors text-sm font-medium"
+                            >
+                              <Search className="w-4 h-4" /> Ver Detalles
+                            </button>
+                            <button
+                              onClick={() => handleEliminar(project._id!)}
+                              className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors text-sm font-medium"
+                            >
+                              <Trash2 className="w-4 h-4" /> Eliminar
+                            </button>
                           </div>
-                          <div className="w-full bg-slate-300 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${progresoReal}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 border-opacity-50">
-                          <button
-                            onClick={() => setProyectoSeleccionado(project)}
-                            className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded transition-colors text-sm font-medium"
-                          >
-                            <Search className="w-4 h-4" /> Ver Detalles
-                          </button>
-                          <button
-                            onClick={() => handleEliminar(project._id!)}
-                            className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors text-sm font-medium"
-                          >
-                            <Trash2 className="w-4 h-4" /> Eliminar
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
@@ -584,44 +581,64 @@ export default function ProyectosPage() {
               <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Nombre</p>
-                  <p className="text-lg font-semibold text-slate-900">{proyectoSeleccionado.nombre}</p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {proyectoSeleccionado.nombre}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-500">Cliente</p>
-                  <p className="text-lg text-slate-900">{proyectoSeleccionado.cliente}</p>
+                  <p className="text-lg text-slate-900">
+                    {proyectoSeleccionado.cliente}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Estado</p>
-                  <span className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${getStatusColor(proyectoSeleccionado.estado).badge}`}>
+                  <span
+                    className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${getStatusColor(proyectoSeleccionado.estado).badge}`}
+                  >
                     {proyectoSeleccionado.estado}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Fecha de Inicio</p>
+                  <p className="text-sm font-medium text-slate-500">
+                    Fecha de Inicio
+                  </p>
                   <p className="text-base text-slate-900 mt-1">
                     {/* Nos aseguramos de formatear la fecha para que no se vea como texto de robot */}
-                    {new Date(proyectoSeleccionado.fechaInicio).toLocaleDateString()}
+                    {new Date(
+                      proyectoSeleccionado.fechaInicio,
+                    ).toLocaleDateString()}
                   </p>
                 </div>
               </div>
 
               {/* LISTA DEL EQUIPO */}
               <div>
-                <p className="text-sm font-medium text-slate-500 mb-2">Equipo Asignado</p>
-                {proyectoSeleccionado.equipo && proyectoSeleccionado.equipo.length > 0 ? (
+                <p className="text-sm font-medium text-slate-500 mb-2">
+                  Equipo Asignado
+                </p>
+                {proyectoSeleccionado.equipo &&
+                proyectoSeleccionado.equipo.length > 0 ? (
                   <ul className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
                     {/* 👇 AQUÍ ESTÁ EL CAMBIO CLAVE 👇 */}
-                    {obtenerDetallesEquipo(proyectoSeleccionado.equipo).map((miembro: any) => (
-                      <li key={miembro._id} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm">
-                        <span className="font-medium text-slate-800">{miembro.nombre}</span>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                          {miembro.especialidad}
-                        </span>
-                      </li>
-                    ))}
+                    {obtenerDetallesEquipo(proyectoSeleccionado.equipo).map(
+                      (miembro: any) => (
+                        <li
+                          key={miembro._id}
+                          className="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm"
+                        >
+                          <span className="font-medium text-slate-800">
+                            {miembro.nombre}
+                          </span>
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                            {miembro.especialidad}
+                          </span>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 ) : (
                   <div className="p-3 bg-slate-50 text-slate-500 rounded-lg text-sm border border-slate-200">

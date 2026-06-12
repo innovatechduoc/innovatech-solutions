@@ -25,7 +25,8 @@ export default function ResourcePage() {
   // Estados para el Modal de creación
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Estado para saber qué recurso estamos viendo en el modal de detalles
-  const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
+  const [recursoSeleccionado, setRecursoSeleccionado] =
+    useState<Recurso | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     cargo: "",
@@ -130,7 +131,7 @@ export default function ResourcePage() {
               {isLoading ? (
                 <div className="col-span-full rounded-lg bg-white p-8 text-center text-slate-500">
                   <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  Cargando recursos desde MongoDB...
+                  Cargando...
                 </div>
               ) : recursos.length === 0 ? (
                 <div className="col-span-full rounded-lg bg-white p-8 text-center text-slate-500">
@@ -166,7 +167,7 @@ export default function ResourcePage() {
                         {r.horasSemanales} h / sem
                       </div>
                       {/* Cambia tu botón actual por este */}
-                      <button 
+                      <button
                         onClick={() => setRecursoSeleccionado(r)}
                         className="text-sm text-slate-400 hover:text-blue-600 transition"
                       >
@@ -335,34 +336,52 @@ export default function ResourcePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium text-slate-500">Nombre</p>
-                <p className="text-lg font-semibold text-slate-900">{recursoSeleccionado.nombre}</p>
+                <p className="text-lg font-semibold text-slate-900">
+                  {recursoSeleccionado.nombre}
+                </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-500">Cargo</p>
-                <p className="text-base text-slate-900">{recursoSeleccionado.cargo}</p>
+                <p className="text-base text-slate-900">
+                  {recursoSeleccionado.cargo}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">Especialidad</p>
-                <p className="text-base text-slate-900">{recursoSeleccionado.especialidad}</p>
+                <p className="text-sm font-medium text-slate-500">
+                  Especialidad
+                </p>
+                <p className="text-base text-slate-900">
+                  {recursoSeleccionado.especialidad}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">Correo Electrónico</p>
-                <p className="text-base text-slate-900">{recursoSeleccionado.email}</p>
+                <p className="text-sm font-medium text-slate-500">
+                  Correo Electrónico
+                </p>
+                <p className="text-base text-slate-900">
+                  {recursoSeleccionado.email}
+                </p>
               </div>
               <div className="flex gap-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Horas</p>
-                  <p className="text-base text-slate-900">{recursoSeleccionado.horasSemanales}h / sem</p>
+                  <p className="text-base text-slate-900">
+                    {recursoSeleccionado.horasSemanales}h / sem
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-500">Estado</p>
-                  <span className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${
-                    recursoSeleccionado.estado === "Activo" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                  }`}>
+                  <span
+                    className={`inline-flex px-2 py-1 mt-1 rounded-full text-xs font-semibold ${
+                      recursoSeleccionado.estado === "Activo"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
                     {recursoSeleccionado.estado || "Desconocido"}
                   </span>
                 </div>
