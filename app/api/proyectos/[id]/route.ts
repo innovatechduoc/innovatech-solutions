@@ -2,16 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectProjectsDB } from "@/lib/mongodb";
 import { getProyectoModel } from "@/models/Proyecto";
 
-// 1. Declaramos que params es una Promesa
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // 2. Usamos await para extraer el id real
     const { id } = await params;
 
-    // 3. Tu lógica de base de datos normal
     const db = await connectProjectsDB();
     const Proyecto = getProyectoModel(db);
 
@@ -41,11 +38,10 @@ export async function PATCH(
     const db = await connectProjectsDB();
     const Proyecto = getProyectoModel(db);
 
-    // Actualizamos el proyecto con los nuevos datos (estado y progress)
     const updatedProject = await Proyecto.findByIdAndUpdate(
       id,
       { $set: body },
-      { new: true }, // Para que devuelva el documento actualizado
+      { new: true },
     );
 
     if (!updatedProject) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectIdentityDB } from "../../../lib/mongodb"; // Importa la conexión de identidad
-import { getUsuarioModel } from "../../../models/Usuario"; // Importa la nueva función
+import { connectIdentityDB } from "../../../lib/mongodb";
+import { getUsuarioModel } from "../../../models/Usuario";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
@@ -8,13 +8,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password } = body;
 
-    // 1. Nos conectamos solo a la BD de identidad
     const db = await connectIdentityDB();
 
-    // 2. Le pasamos esa conexión a nuestro modelo
     const Usuario = getUsuarioModel(db);
 
-    // 3. El resto de tu código queda igual...
     const user = await Usuario.findOne({ email });
 
     if (!user) {
@@ -24,7 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // <-- 2. AQUI ESTÁ LA MAGIA: Comparamos la contraseña plana con el hash de la BD
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {

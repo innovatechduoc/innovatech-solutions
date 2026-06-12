@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-// 1. Importamos la conexión específica para Recursos Humanos (HR)
 import { connectResourcesDB } from "@/lib/mongodb";
-// 2. Importamos las funciones inyectoras en lugar de los modelos directos
 import { getEmpleadoModel } from "@/models/Empleado";
 import { getNotificacionModel } from "@/models/Notificacion";
 
 export async function GET() {
   try {
-    // Conectamos a la base de datos de HR
     const db = await connectResourcesDB();
     const Empleado = getEmpleadoModel(db);
 
@@ -24,17 +21,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    // Conectamos a la base de datos de HR
     const db = await connectResourcesDB();
     const Empleado = getEmpleadoModel(db);
     const Notificacion = getNotificacionModel(db);
 
     const body = await request.json();
 
-    // Creamos el empleado en la base de datos de HR
     const nuevoEmpleado = await Empleado.create(body);
 
-    // Creamos la notificación (se guardará en la misma base de datos de HR)
     await Notificacion.create({
       type: "employee",
       title: "Nuevo usuario agregado",

@@ -68,6 +68,33 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  const handleRecuperarPassword = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError(
+        "Por favor, ingresa un email válido para recuperar tu contraseña.",
+      );
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/send-email", {
+        // Asegúrate que esta ruta coincida con tu archivo
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setSuccess(
+          "Se ha notificado al administrador para restablecer tu contraseña.",
+        );
+      } else {
+        setError("Error al enviar la solicitud de recuperación.");
+      }
+    } catch (err) {
+      setError("Error de conexión.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 overflow-hidden relative">
@@ -235,12 +262,13 @@ export default function LoginPage() {
                       Recuérdame
                     </span>
                   </label>
-                  <a
-                    href="#"
-                    className="text-blue-400 hover:text-blue-300 transition"
+                  <button
+                    type="button"
+                    onClick={handleRecuperarPassword}
+                    className="text-blue-400 hover:text-blue-300 transition text-sm"
                   >
                     ¿Olvidaste tu contraseña?
-                  </a>
+                  </button>
                 </div>
 
                 {/* Submit Button */}

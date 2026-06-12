@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectProjectsDB } from "@/lib/mongodb";
-import { getNotificacionModel } from "@/models/Notificacion"; // Ajusta la ruta si tu carpeta models está dentro de lib
+import { getNotificacionModel } from "@/models/Notificacion";
 
 export async function GET(request: Request) {
   try {
-    // 1. Usamos la conexión específica
     const db = await connectProjectsDB();
-    // 2. Registramos el modelo en esa conexión
     const Notificacion = getNotificacionModel(db);
 
     const { searchParams } = new URL(request.url);
@@ -28,7 +26,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // Aplicamos el mismo patrón
     const db = await connectProjectsDB();
     const Notificacion = getNotificacionModel(db);
 
@@ -61,7 +58,6 @@ export async function POST(request: Request) {
 
 export async function PATCH() {
   try {
-    // Aplicamos el mismo patrón
     const db = await connectProjectsDB();
     const Notificacion = getNotificacionModel(db);
 
